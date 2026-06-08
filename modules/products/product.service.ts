@@ -57,9 +57,10 @@ export class ProductService {
       {};
 
     if (query.search) {
-      filter.$text = {
-        $search: query.search,
-      };
+       filter.name = {
+    $regex: query.search,
+    $options: 'i'
+  };
     }
 
     if (query.status) {

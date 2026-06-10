@@ -16,6 +16,7 @@ import {
   PaymentMethod,
   GatewayStatus,
 } from './order.types';
+import orderModel from './order.model';
 
 export class OrderService {
   private orderRepo: OrderRepository;
@@ -43,6 +44,115 @@ export class OrderService {
     // Free shipping for orders above 1000, otherwise 100
     return amount >= 1000 ? 0 : 100;
   }
+
+  async getAllOrders(query: any) {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const filter: any = {};
+
+  // Search by Order Number
+  if (query.search?.trim()) {
+    filter.orderNumber = {
+      $regex: query.search.trim(),
+      $options: 'i',
+    };
+  }
+
+  // Order Status Filter
+  if (
+    query.orderStatus &&
+    Object.values(OrderStatus).includes(
+      query.orderStatus
+    )
+  ) {
+    filter.orderStatus =
+      query.orderStatus;
+  }
+
+  // Payment Status Filter
+  if (
+    query.paymentStatus &&
+    Object.values(
+      PaymentStatus
+    ).includes(query.paymentStatus)
+  ) {
+    filter.paymentStatus =
+      query.paymentStatus;
+  }
+
+  // Payment Method Filter
+  if (
+    query.paymentMethod &&
+    Object.values(
+      PaymentMethod
+    ).includes(query.paymentMethod)
+  ) {
+    filter.paymentMethod =
+      query.paymentMethod;
+  }
+
+  // Date Range
+  if (
+    query.startDate ||
+    query.endDate
+  ) {
+    filter.createdAt = {};
+
+    if (query.startDate) {
+      filter.createdAt.$gte = new Date(
+        query.startDate
+      );
+    }
+
+    if (query.endDate) {
+      filter.createdAt.$lte = new Date(
+        query.endDate
+      );
+    }
+  }
+
+  // Sorting
+  const sort: any = {};
+
+  if (query.sort === 'oldest') {
+    sort.createdAt = 1;
+  } else {
+    sort.createdAt = -1;
+  }
+
+  const [orders, total] =
+    await Promise.all([
+      orderModel.find(filter)
+        .populate(
+          'userId',
+          'name mobileNumber email'
+        )
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+
+      orderModel.countDocuments(filter),
+    ]);
+
+  return {
+    orders,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(
+        total / limit
+      ),
+      hasNext:
+        page <
+        Math.ceil(total / limit),
+      hasPrevious: page > 1,
+    },
+  };
+}
 
   async previewOrder(userId: string, dto: PreviewOrderDto): Promise<OrderPreviewResponse> {
     const cart = await this.cartRepo.findByUserId(userId, 'active');

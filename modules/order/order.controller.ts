@@ -188,7 +188,7 @@ export class OrderController {
   }
 
   // Admin methods
-  async getAllOrders(req: any, res: Response) {
+  async getAllOrders1(req: any, res: Response) {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
@@ -214,6 +214,27 @@ export class OrderController {
       });
     }
   }
+
+  async getAllOrders(req: any, res: Response) {
+  try {
+    const result =
+      await orderService.getAllOrders(
+        req.query
+      );
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        'Failed to fetch orders',
+    });
+  }
+}
 
   async getAdminOrderById(req: any, res: Response) {
     try {

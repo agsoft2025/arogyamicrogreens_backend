@@ -93,6 +93,9 @@ export class OrderController {
       const userId = req.userId;
       const dto: CreateCodOrderDto = req.body;
 
+      console.log('Creating COD order for user:', userId);
+      console.log('Request body:', dto);
+
       const result = await orderService.createCodOrder(userId, dto);
 
       return res.json({
@@ -100,6 +103,7 @@ export class OrderController {
         data: result,
       });
     } catch (error: any) {
+      console.error('COD Order Error:', error);
       if (error instanceof OrderError) {
         return res.status(error.statusCode).json({
           success: false,
@@ -108,7 +112,7 @@ export class OrderController {
       }
       return res.status(500).json({
         success: false,
-        message: 'Failed to create COD order',
+        message: error.message || 'Failed to create COD order',
       });
     }
   }

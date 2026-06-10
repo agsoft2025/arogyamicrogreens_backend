@@ -378,123 +378,224 @@ export class OrderService {
     }
   }
 
-  async createCodOrder(userId: string, dto: CreateCodOrderDto): Promise<any> {
-    const session = await mongoose.startSession();
-    try {
-      session.startTransaction();
+  // async createCodOrder(userId: string, dto: CreateCodOrderDto): Promise<any> {
+  //   console.log('createCodOrder called for userId:', userId);
+  //   const session = await mongoose.startSession();
+  //   try {
+  //     session.startTransaction();
 
-      // Get and validate cart
-      const cart = await this.cartRepo.findByUserId(userId, 'active');
-      if (!cart || cart.items.length === 0) {
-        throw new OrderError('Cart is empty', 400);
+  //     // Get and validate cart
+  //     console.log('Fetching cart for user:', userId);
+  //     const cart = await this.cartRepo.findByUserId(userId, 'active');
+  //     console.log('Cart found:', cart ? 'Yes' : 'No');
+  //     console.log('Cart items:', cart?.items?.length || 0);
+  //     if (!cart || cart.items.length === 0) {
+  //       throw new OrderError('Cart is empty', 400);
+  //     }
+
+  //     // Calculate order preview
+  //     const preview = await this.previewOrder(userId, {
+  //       couponCode: dto.couponCode,
+  //     });
+
+  //     // Generate order number
+  //     const orderNumber = this.generateOrderNumber();
+
+  //     // Lock inventory and deduct stock
+  //     for (const item of cart.items) {
+  //       const productId =
+  //         typeof item.productId === 'object'
+  //           ? item.productId._id
+  //           : item.productId;
+  //       const product = await Product.findById(productId);
+
+  //       if (!product) {
+  //         throw new OrderError(`Product not found: ${productId}`, 404);
+  //       }
+
+  //       if (product.stock < item.quantity) {
+  //         throw new OrderError(`Insufficient stock for ${product.name}`, 400);
+  //       }
+
+  //       await Product.findByIdAndUpdate(
+  //         productId,
+  //         {
+  //           $inc: { stock: -item.quantity },
+  //         },
+  //         { session }
+  //       );
+  //     }
+
+  //     // Create order
+  //     const order = await this.orderRepo.create({
+  //       orderNumber,
+  //       userId: new mongoose.Types.ObjectId(userId),
+  //       items: cart.items.map((item) => {
+  //         const productId =
+  //           typeof item.productId === 'object'
+  //             ? item.productId._id
+  //             : item.productId;
+  //         return {
+  //           productId,
+  //           productName: ((item.productId as any)?.name) || 'Product',
+  //           quantity: item.quantity,
+  //           unitPrice: item.price,
+  //           totalPrice: (item.salePrice || item.price) * item.quantity,
+  //           salePrice: item.salePrice,
+  //         };
+  //       }),
+  //       subtotal: preview.subtotal,
+  //       discount: preview.discount,
+  //       shippingCharge: preview.shipping,
+  //       taxAmount: preview.tax,
+  //       totalAmount: preview.grandTotal,
+  //       paymentMethod: PaymentMethod.COD,
+  //       paymentStatus: PaymentStatus.UNPAID,
+  //       orderStatus: OrderStatus.PENDING,
+  //       shippingAddress: dto.shippingAddress,
+  //       billingAddress: dto.billingAddress,
+  //       couponCode: dto.couponCode,
+  //       notes: dto.notes,
+  //     });
+
+  //     // Create payment transaction record
+  //     await this.orderRepo.createPaymentTransaction({
+  //       orderId: order._id,
+  //       userId: new mongoose.Types.ObjectId(userId),
+  //       paymentGateway: 'COD',
+  //       amount: preview.grandTotal,
+  //       currency: 'INR',
+  //       status: GatewayStatus.PENDING,
+  //       paymentMethod: PaymentMethod.COD,
+  //     });
+
+  //     // Create status history
+  //     await this.orderRepo.createStatusHistory({
+  //       orderId: order._id,
+  //       status: OrderStatus.PENDING,
+  //       remarks: 'COD order created',
+  //       changedByRole: 'SYSTEM',
+  //     });
+
+  //     // Clear cart
+  //     await this.cartRepo.updateById(userId, {
+  //       items: [],
+  //       totalAmount: 0,
+  //     });
+
+  //     await session.commitTransaction();
+
+  //     // TODO: Send order confirmation email and WhatsApp
+
+  //     return {
+  //       success: true,
+  //       orderNumber: order.orderNumber,
+  //       message: 'COD order created successfully',
+  //     };
+  //   } catch (error: any) {
+  //     console.error('Error in createCodOrder:', error);
+  //     await session.abortTransaction();
+  //     throw error;
+  //   } finally {
+  //     session.endSession();
+  //   }
+  // }
+
+  async createCodOrder(userId: string, dto: CreateCodOrderDto): Promise<any> {
+  try {
+    const cart = await this.cartRepo.findByUserId(userId, 'active');
+
+    if (!cart || cart.items.length === 0) {
+      throw new OrderError('Cart is empty', 400);
+    }
+
+    const preview = await this.previewOrder(userId, {
+      couponCode: dto.couponCode,
+    });
+
+    const orderNumber = this.generateOrderNumber();
+
+    for (const item of cart.items) {
+      const productId =
+        typeof item.productId === 'object'
+          ? item.productId._id
+          : item.productId;
+
+      const product = await Product.findById(productId);
+
+      if (!product) {
+        throw new OrderError(`Product not found: ${productId}`, 404);
       }
 
-      // Calculate order preview
-      const preview = await this.previewOrder(userId, {
-        couponCode: dto.couponCode,
+      if (product.stock < item.quantity) {
+        throw new OrderError(`Insufficient stock for ${product.name}`, 400);
+      }
+
+      await Product.findByIdAndUpdate(productId, {
+        $inc: { stock: -item.quantity },
       });
+    }
 
-      // Generate order number
-      const orderNumber = this.generateOrderNumber();
-
-      // Lock inventory and deduct stock
-      for (const item of cart.items) {
-        const productId =
+    const order = await this.orderRepo.create({
+      orderNumber,
+      userId: new mongoose.Types.ObjectId(userId),
+      items: cart.items.map((item) => ({
+        productId:
           typeof item.productId === 'object'
             ? item.productId._id
-            : item.productId;
-        const product = await Product.findById(productId);
+            : item.productId,
+        productName: ((item.productId as any)?.name) || 'Product',
+        quantity: item.quantity,
+        unitPrice: item.price,
+        totalPrice: (item.salePrice || item.price) * item.quantity,
+        salePrice: item.salePrice,
+      })),
+      subtotal: preview.subtotal,
+      discount: preview.discount,
+      shippingCharge: preview.shipping,
+      taxAmount: preview.tax,
+      totalAmount: preview.grandTotal,
+      paymentMethod: PaymentMethod.COD,
+      paymentStatus: PaymentStatus.UNPAID,
+      orderStatus: OrderStatus.PENDING,
+      shippingAddress: dto.shippingAddress,
+      billingAddress: dto.billingAddress,
+      couponCode: dto.couponCode,
+      notes: dto.notes,
+    });
 
-        if (!product) {
-          throw new OrderError(`Product not found: ${productId}`, 404);
-        }
+    await this.orderRepo.createPaymentTransaction({
+      orderId: order._id,
+      userId: new mongoose.Types.ObjectId(userId),
+      paymentGateway: 'COD',
+      amount: preview.grandTotal,
+      currency: 'INR',
+      status: GatewayStatus.PENDING,
+      paymentMethod: PaymentMethod.COD,
+    });
 
-        if (product.stock < item.quantity) {
-          throw new OrderError(`Insufficient stock for ${product.name}`, 400);
-        }
+    await this.orderRepo.createStatusHistory({
+      orderId: order._id,
+      status: OrderStatus.PENDING,
+      remarks: 'COD order created',
+      changedByRole: 'SYSTEM',
+    });
 
-        await Product.findByIdAndUpdate(
-          productId,
-          {
-            $inc: { stock: -item.quantity },
-          },
-          { session }
-        );
-      }
+    await this.cartRepo.updateById(userId, {
+      items: [],
+      totalAmount: 0,
+    });
 
-      // Create order
-      const order = await this.orderRepo.create({
-        orderNumber,
-        userId: new mongoose.Types.ObjectId(userId),
-        items: cart.items.map((item) => {
-          const productId =
-            typeof item.productId === 'object'
-              ? item.productId._id
-              : item.productId;
-          return {
-            productId,
-            productName: ((item.productId as any)?.name) || 'Product',
-            quantity: item.quantity,
-            unitPrice: item.price,
-            totalPrice: (item.salePrice || item.price) * item.quantity,
-            salePrice: item.salePrice,
-          };
-        }),
-        subtotal: preview.subtotal,
-        discount: preview.discount,
-        shippingCharge: preview.shipping,
-        taxAmount: preview.tax,
-        totalAmount: preview.grandTotal,
-        paymentMethod: PaymentMethod.COD,
-        paymentStatus: PaymentStatus.UNPAID,
-        orderStatus: OrderStatus.PENDING,
-        shippingAddress: dto.shippingAddress,
-        billingAddress: dto.billingAddress,
-        couponCode: dto.couponCode,
-        notes: dto.notes,
-      });
-
-      // Create payment transaction record
-      await this.orderRepo.createPaymentTransaction({
-        orderId: order._id,
-        userId: new mongoose.Types.ObjectId(userId),
-        paymentGateway: 'COD',
-        amount: preview.grandTotal,
-        currency: 'INR',
-        status: GatewayStatus.PENDING,
-        paymentMethod: PaymentMethod.COD,
-      });
-
-      // Create status history
-      await this.orderRepo.createStatusHistory({
-        orderId: order._id,
-        status: OrderStatus.PENDING,
-        remarks: 'COD order created',
-        changedByRole: 'SYSTEM',
-      });
-
-      // Clear cart
-      await this.cartRepo.updateById(userId, {
-        items: [],
-        totalAmount: 0,
-      });
-
-      await session.commitTransaction();
-
-      // TODO: Send order confirmation email and WhatsApp
-
-      return {
-        success: true,
-        orderNumber: order.orderNumber,
-        message: 'COD order created successfully',
-      };
-    } catch (error: any) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
+    return {
+      success: true,
+      orderNumber: order.orderNumber,
+      message: 'COD order created successfully',
+    };
+  } catch (error) {
+    console.error('Error in createCodOrder:', error);
+    throw error;
   }
+}
 
   async getMyOrders(userId: string, page: number = 1, limit: number = 10) {
     const orders = await this.orderRepo.findByUserId(userId, page, limit);

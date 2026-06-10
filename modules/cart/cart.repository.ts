@@ -34,7 +34,7 @@ export class CartRepository {
       id,
       data,
       {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       }
     ).populate(
@@ -63,7 +63,7 @@ export class CartRepository {
         },
       },
       {
-        new: true,
+        returnDocument: 'after',
       }
     ).populate(
       'items.productId',
@@ -83,7 +83,7 @@ export class CartRepository {
         },
       },
       {
-        new: true,
+        returnDocument: 'after',
       }
     ).populate(
       'items.productId',

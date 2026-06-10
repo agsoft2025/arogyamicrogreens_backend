@@ -147,6 +147,8 @@ export class CartService {
     productId: string,
     data: UpdateCartItemDto
   ) {
+    console.log('updateCartItem called:', { userId, productId, quantity: data.quantity });
+
     const cart =
       await this.cartRepo.findByUserId(
         userId,
@@ -156,10 +158,9 @@ export class CartService {
     if (!cart) {
       throw new CartError('Cart not found', 404);
     }
-
     const itemIndex = cart.items.findIndex(
       (item) =>
-        item.productId.toString() ===
+        item.productId._id.toString() ===
         productId
     );
 
@@ -169,6 +170,9 @@ export class CartService {
         404
       );
     }
+
+    console.log('Current item quantity:', cart.items[itemIndex].quantity);
+    console.log('New quantity:', data.quantity);
 
     const product =
       await Product.findById(productId);
@@ -200,6 +204,15 @@ export class CartService {
         }
       );
 
+    if (!updatedCart) {
+      throw new CartError('Failed to update cart', 500);
+    }
+
+    console.log('Updated cart items:', updatedCart.items.map(i => ({
+      productId: i.productId._id?.toString() || i.productId.toString(),
+      quantity: i.quantity
+    })));
+
     return updatedCart;
   }
 
@@ -207,6 +220,7 @@ export class CartService {
     userId: string,
     productId: string
   ) {
+    console.log("Removing from cart", userId, productId);
     const cart =
       await this.cartRepo.findByUserId(
         userId,
@@ -219,7 +233,7 @@ export class CartService {
 
     const itemIndex = cart.items.findIndex(
       (item) =>
-        item.productId.toString() ===
+        item.productId._id.toString() ===
         productId
     );
 
@@ -243,6 +257,10 @@ export class CartService {
           totalAmount: cart.totalAmount,
         }
       );
+
+    if (!updatedCart) {
+      throw new CartError('Failed to update cart', 500);
+    }
 
     return updatedCart;
   }
@@ -270,6 +288,10 @@ export class CartService {
         }
       );
 
+    if (!updatedCart) {
+      throw new CartError('Failed to clear cart', 500);
+    }
+
     return updatedCart;
   }
 
@@ -280,3 +302,4 @@ export class CartService {
     }, 0);
   }
 }
+

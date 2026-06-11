@@ -236,59 +236,133 @@ export class OrderController {
   }
 }
 
-  async getAdminOrderById(req: any, res: Response) {
-    try {
-      const orderId = req.params.id;
+async getAdminOrderById(req: any, res: Response) {
+  try {
+    const orderId = req.params.id;
 
-      // TODO: Implement admin order details
-      return res.json({
-        success: true,
-        data: null,
-      });
-    } catch (error: any) {
-      return res.status(500).json({
+    const order =
+      await orderService.getAdminOrderById(orderId);
+
+    return res.json({
+      success: true,
+      data: order,
+    });
+  } catch (error: any) {
+    if (error instanceof OrderError) {
+      return res.status(error.statusCode).json({
         success: false,
-        message: 'Failed to fetch order',
+        message: error.message,
       });
     }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch order',
+    });
   }
+}
+
+  // async updateOrderStatus(req: any, res: Response) {
+  //   try {
+  //     const orderId = req.params.id;
+  //     const dto: UpdateOrderStatusDto = req.body;
+  //     const adminId = req.userId;
+
+  //     // TODO: Implement admin status update
+  //     return res.json({
+  //       success: true,
+  //       message: 'Order status updated successfully',
+  //     });
+  //   } catch (error: any) {
+  //     return res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to update order status',
+  //     });
+  //   }
+  // }
 
   async updateOrderStatus(req: any, res: Response) {
-    try {
-      const orderId = req.params.id;
-      const dto: UpdateOrderStatusDto = req.body;
-      const adminId = req.userId;
+  try {
+    const orderId = req.params.id;
+    const adminId = req.userId;
 
-      // TODO: Implement admin status update
-      return res.json({
-        success: true,
-        message: 'Order status updated successfully',
-      });
-    } catch (error: any) {
-      return res.status(500).json({
+    const result =
+      await orderService.updateOrderStatus(
+        orderId,
+        req.body.status,
+        adminId,
+        req.body.remarks
+      );
+
+    return res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    if (error instanceof OrderError) {
+      return res.status(error.statusCode).json({
         success: false,
-        message: 'Failed to update order status',
+        message: error.message,
       });
     }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update order status',
+    });
   }
+}
+
+  // async refundOrder(req: any, res: Response) {
+  //   try {
+  //     const orderId = req.params.id;
+  //     const dto: RefundOrderDto = req.body;
+
+  //     // TODO: Implement admin refund
+  //     return res.json({
+  //       success: true,
+  //       message: 'Refund processed successfully',
+  //     });
+  //   } catch (error: any) {
+  //     return res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to process refund',
+  //     });
+  //   }
+  // }
 
   async refundOrder(req: any, res: Response) {
-    try {
-      const orderId = req.params.id;
-      const dto: RefundOrderDto = req.body;
+  try {
+    const orderId = req.params.id;
+    const adminId = req.userId;
 
-      // TODO: Implement admin refund
-      return res.json({
-        success: true,
-        message: 'Refund processed successfully',
-      });
-    } catch (error: any) {
-      return res.status(500).json({
+    const result =
+      await orderService.refundOrder(
+        orderId,
+        adminId,
+        req.body.refundAmount
+      );
+
+    return res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    if (error instanceof OrderError) {
+      return res.status(error.statusCode).json({
         success: false,
-        message: 'Failed to process refund',
+        message: error.message,
       });
     }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to process refund',
+    });
   }
+}
+
+
 }
 
 export default new OrderController();

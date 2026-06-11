@@ -845,4 +845,129 @@ export class OrderService {
       session.endSession();
     }
   }
+
+  async getAdminOrderById(orderId: string) {
+  const order = await this.orderRepo.findById(orderId);
+
+  if (!order) {
+    throw new OrderError('Order not found', 404);
+  }
+
+  const paymentTransaction =
+    await this.orderRepo.findPaymentTransactionByOrderId(orderId);
+
+  const statusHistory =
+    await this.orderRepo.findStatusHistoryByOrderId(orderId);
+
+  return {
+    ...order.toObject(),
+    paymentTransaction,
+    statusHistory,
+  };
+}
+
+async updateOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+  adminId: string,
+  remarks?: string
+) {
+  const order = await this.orderRepo.findById(orderId);
+
+  if (!order) {
+    throw new OrderError('Order not found', 404);
+  }
+
+  await this.orderRepo.updateById(orderId, {
+    orderStatus: status,
+  });
+
+  await this.orderRepo.createStatusHistory({
+    orderId: order._id,
+    status,
+    remarks: remarks || `Status changed to ${status}`,
+    changedBy: new mongoose.Types.ObjectId(adminId),
+    changedByRole: 'ADMIN',
+  });
+
+  return {
+    success: true,
+    message: 'Order status updated successfully',
+  };
+}
+
+async refundOrder(
+  orderId: string,
+  adminId: string,
+  refundAmount?: number
+) {
+  const order = await this.orderRepo.findById(orderId);
+
+  if (!order) {
+    throw new OrderError('Order not found', 404);
+  }
+
+  if (
+    order.paymentStatus !== PaymentStatus.SUCCESS
+  ) {
+    throw new OrderError(
+      'Only paid orders can be refunded',
+      400
+    );
+  }
+
+  const paymentTransaction =
+    await this.orderRepo.findPaymentTransactionByOrderId(
+      orderId
+    );
+
+  if (
+    !paymentTransaction ||
+    !paymentTransaction.razorpayPaymentId
+  ) {
+    throw new OrderError(
+      'Payment transaction not found',
+      404
+    );
+  }
+
+  const refund =
+    await this.razorpayService.refundPayment(
+      paymentTransaction.razorpayPaymentId,
+      refundAmount || order.totalAmount,
+      {
+        reason: 'Refund initiated by admin',
+      }
+    );
+
+  await this.orderRepo.updatePaymentTransaction(
+    paymentTransaction._id.toString(),
+    {
+      status: GatewayStatus.REFUNDED,
+      refundId: refund.id,
+      refundAmount:
+        refundAmount || order.totalAmount,
+    }
+  );
+
+  await this.orderRepo.updateById(orderId, {
+    paymentStatus: PaymentStatus.REFUNDED,
+    orderStatus: OrderStatus.CANCELLED,
+  });
+
+  await this.orderRepo.createStatusHistory({
+    orderId: order._id,
+    status: OrderStatus.CANCELLED,
+    remarks: 'Refund processed by admin',
+    changedBy: new mongoose.Types.ObjectId(adminId),
+    changedByRole: 'ADMIN',
+  });
+
+  return {
+    success: true,
+    refundId: refund.id,
+    amount:
+      refundAmount || order.totalAmount,
+  };
+}
 }

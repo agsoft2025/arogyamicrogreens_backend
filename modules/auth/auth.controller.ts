@@ -29,12 +29,14 @@ export class AuthController {
   ) {
     const { mobileNumber } =
       req.body;
-    await authService.sendOtp(
+
+    const data = await authService.sendOtp(
       mobileNumber
     );
 
     return res.json({
       success: true,
+      username:data.user_status,
       message:
         'OTP sent successfully',
     });

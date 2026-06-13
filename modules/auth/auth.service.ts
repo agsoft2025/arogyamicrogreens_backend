@@ -32,7 +32,6 @@ export class AuthService {
       await this.authRepo.findUserByMobile(
         mobileNumber
       );
-      console.log("<><>user",user)
     const now = Date.now();
     const existingOtp =
       otpStore.get(mobileNumber);
@@ -69,7 +68,7 @@ export class AuthService {
       `OTP for ${mobileNumber}: ${otp}`
     );
 
-    return true;
+    return { success: true, otp };
   }
 
   async verifyOtp(

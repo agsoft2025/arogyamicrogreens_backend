@@ -28,16 +28,6 @@ export class AuthService {
   async sendOtp(
     mobileNumber: string
   ) {
-    let isUser = false
-     let user =
-      await this.authRepo.findUserByMobile(
-        mobileNumber
-      );
-      if(user){
-        isUser = true
-      }
-      console.log("<><>user",user)
-      console.log("<><>isUser",isUser);
     const now = Date.now();
     const existingOtp =
       otpStore.get(mobileNumber);
@@ -74,7 +64,7 @@ export class AuthService {
       `OTP for ${mobileNumber}: ${otp}`
     );
 
-    return {status:true, user_status:isUser};
+    return { success: true, otp };
   }
 
   async verifyOtp(

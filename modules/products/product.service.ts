@@ -3,6 +3,7 @@ import mongoose, {
 } from 'mongoose';
 import {
   IProduct,
+  ProductCategory,
   ProductStatus,
 } from './product.model';
 import { ProductRepository } from './product.repository';
@@ -12,9 +13,12 @@ type ProductListQuery = {
   limit?: string;
   search?: string;
   status?: ProductStatus;
-  categoryId?: string;
+  category?: ProductCategory;
   isFeatured?: string;
+  isBestSeller?: string;
 };
+
+const VALID_CATEGORIES: ProductCategory[] = ['product', 'microgreen'];
 
 export class ProductError extends Error {
   constructor(
@@ -32,10 +36,7 @@ export class ProductService {
   async createProduct(
     data: Partial<IProduct>
   ) {
-    this.validateCategoryId(
-      data.categoryId?.toString()
-    );
-
+    this.validateCategory(data.category);
     return this.productRepo.create(data);
   }
 
@@ -53,26 +54,22 @@ export class ProductService {
       ),
       100
     );
-    const filter: QueryFilter<IProduct> =
-      {};
+    const filter: QueryFilter<IProduct> = {};
 
     if (query.search) {
-       filter.name = {
-    $regex: query.search,
-    $options: 'i'
-  };
+      filter.name = {
+        $regex: query.search,
+        $options: 'i',
+      };
     }
 
     if (query.status) {
       filter.status = query.status;
     }
 
-    if (query.categoryId) {
-      this.validateCategoryId(
-        query.categoryId
-      );
-      filter.categoryId =
-        query.categoryId;
+    if (query.category) {
+      this.validateCategory(query.category);
+      filter.category = query.category;
     }
 
     if (
@@ -81,6 +78,14 @@ export class ProductService {
     ) {
       filter.isFeatured =
         query.isFeatured === 'true';
+    }
+
+    if (
+      query.isBestSeller === 'true' ||
+      query.isBestSeller === 'false'
+    ) {
+      filter.isBestSeller =
+        query.isBestSeller === 'true';
     }
 
     const { items, total } =
@@ -96,9 +101,7 @@ export class ProductService {
         total,
         page,
         limit,
-        totalPages: Math.ceil(
-          total / limit
-        ),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
@@ -121,9 +124,7 @@ export class ProductService {
 
   async getProductBySlug(slug: string) {
     const product =
-      await this.productRepo.findBySlug(
-        slug
-      );
+      await this.productRepo.findBySlug(slug);
 
     if (!product) {
       throw new ProductError(
@@ -141,10 +142,8 @@ export class ProductService {
   ) {
     this.validateObjectId(id);
 
-    if (data.categoryId) {
-      this.validateCategoryId(
-        data.categoryId.toString()
-      );
+    if (data.category) {
+      this.validateCategory(data.category);
     }
 
     const product =
@@ -167,9 +166,7 @@ export class ProductService {
     this.validateObjectId(id);
 
     const product =
-      await this.productRepo.deleteById(
-        id
-      );
+      await this.productRepo.deleteById(id);
 
     if (!product) {
       throw new ProductError(
@@ -179,6 +176,21 @@ export class ProductService {
     }
 
     return product;
+  }
+
+  private validateCategory(
+    category?: ProductCategory | string
+  ) {
+    if (!category) {
+      throw new ProductError(
+        'Category is required'
+      );
+    }
+    if (!VALID_CATEGORIES.includes(category as ProductCategory)) {
+      throw new ProductError(
+        `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}`
+      );
+    }
   }
 
   private parsePositiveNumber(
@@ -198,29 +210,12 @@ export class ProductService {
     return Math.floor(parsed);
   }
 
-  private validateCategoryId(
-    categoryId?: string
-  ) {
-    if (!categoryId) {
-      throw new ProductError(
-        'Category ID is required'
-      );
-    }
-
-    this.validateObjectId(
-      categoryId,
-      'Invalid category ID'
-    );
-  }
-
   private validateObjectId(
     id: string,
     message = 'Invalid product ID'
   ) {
     if (
-      !mongoose.Types.ObjectId.isValid(
-        id
-      )
+      !mongoose.Types.ObjectId.isValid(id)
     ) {
       throw new ProductError(message);
     }

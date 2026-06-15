@@ -28,10 +28,6 @@ export class AuthService {
   async sendOtp(
     mobileNumber: string
   ) {
-     let user =
-      await this.authRepo.findUserByMobile(
-        mobileNumber
-      );
     const now = Date.now();
     const existingOtp =
       otpStore.get(mobileNumber);

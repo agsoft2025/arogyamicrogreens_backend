@@ -269,9 +269,11 @@ export function buildOrderNotificationEmail(data: OrderNotificationData): {
                     <div style="background:#f9f9f9;border-radius:8px;padding:14px 16px;border:1px solid ${border};">
                       <p style="margin:0 0 6px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:${muted};">Billing Address</p>
                       <p style="margin:0;font-size:13px;color:${text};line-height:1.6;">
-                        <strong>${order.billingAddress.fullName}</strong><br/>
-                        ${order.billingAddress.phone}<br/>
-                        ${formatAddress(order.billingAddress)}
+                        <strong>AgriNest</strong><br/>
+                        Plot No 359, Gokul Plots<br/>
+                        KPHB 9th Phase<br/>
+                        Hyderabad, Telangana – 500085<br/>
+                        India
                       </p>
                     </div>
                   </td>

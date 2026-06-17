@@ -23,7 +23,11 @@ export class CartRepository {
   }
 
   async create(data: Partial<ICart>) {
-    return Cart.create(data);
+    const cart = await Cart.create(data);
+    return Cart.findById(cart._id).populate(
+      'items.productId',
+      'name slug price salePrice stock images featuredImage'
+    );
   }
 
   async updateById(

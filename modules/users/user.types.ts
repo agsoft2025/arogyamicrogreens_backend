@@ -16,6 +16,19 @@ export type UpdateUserDto = Partial<{
   isMobileVerified: boolean;
 }>;
 
+export type SaveAddressDto = {
+  label?: string;
+  fullName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault?: boolean;
+};
+
 export type UserListQuery = {
   page?: string;
   limit?: string;

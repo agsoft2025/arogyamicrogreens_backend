@@ -57,10 +57,8 @@ export class ProductService {
     const filter: QueryFilter<IProduct> = {};
 
     if (query.search) {
-      filter.name = {
-        $regex: query.search,
-        $options: 'i',
-      };
+      const searchRegex = { $regex: query.search, $options: 'i' };
+      (filter as any).$or = [{ name: searchRegex }, { sku: searchRegex }];
     }
 
     if (query.status) {

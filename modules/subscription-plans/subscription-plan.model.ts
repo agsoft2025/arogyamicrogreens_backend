@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export type IconType = "star" | "gift" | "none";
 export type ButtonStyle = "primary" | "secondary";
 export type PlanStatus = "active" | "inactive";
+export type PlanCategory = "microgreens" | "microgreens-meal";
 
 export interface PlanFeature {
   text: string;
@@ -21,6 +22,7 @@ export interface ISubscriptionPlan {
   featured: boolean;
   displayOrder: number;
   status: PlanStatus;
+  category: PlanCategory;
   features: PlanFeature[];
   createdAt?: Date;
   updatedAt?: Date;
@@ -60,6 +62,11 @@ const SubscriptionPlanSchema = new Schema<ISubscriptionPlanDocument>(
       type: String,
       enum: ["active", "inactive"] as PlanStatus[],
       default: "active",
+    },
+    category: {
+      type: String,
+      enum: ["microgreens", "microgreens-meal"] as PlanCategory[],
+      default: "microgreens",
     },
     features: { type: [PlanFeatureSchema], default: [] },
   },

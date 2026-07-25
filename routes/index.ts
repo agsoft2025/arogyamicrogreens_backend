@@ -7,6 +7,7 @@ import cartRoutes from '../modules/cart/cart.routes';
 import orderRoutes from '../modules/order/order.routes';
 import webhookRoutes from '../modules/order/webhook.routes';
 import subscriptionRoutes from '../modules/subscription/subscription.routes';
+import subscriptionPlanRoutes from '../modules/subscription-plans/subscription-plan.routes';
 import contactRoutes from '../modules/contact/contact.routes';
 import testEmailRoutes from '../modules/test-email/test-email.routes';
 
@@ -20,6 +21,7 @@ router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
 router.use('/webhooks', webhookRoutes);
 router.use('/subscriptions', subscriptionRoutes);
+router.use('/subscription-plans', subscriptionPlanRoutes);
 router.use('/contact', contactRoutes);
 router.use('/test-email', testEmailRoutes);
 

@@ -10,6 +10,9 @@ import subscriptionRoutes from '../modules/subscription/subscription.routes';
 import subscriptionPlanRoutes from '../modules/subscription-plans/subscription-plan.routes';
 import contactRoutes from '../modules/contact/contact.routes';
 import testEmailRoutes from '../modules/test-email/test-email.routes';
+import reviewSettingsRoutes from '../modules/review-settings/review-settings.routes';
+import reviewRoutes from '../modules/reviews/review.routes';
+import statsRoutes from '../modules/stats/stats.routes';
 
 const router = Router();
 
@@ -24,5 +27,8 @@ router.use('/subscriptions', subscriptionRoutes);
 router.use('/subscription-plans', subscriptionPlanRoutes);
 router.use('/contact', contactRoutes);
 router.use('/test-email', testEmailRoutes);
+router.use('/review-settings', reviewSettingsRoutes);
+router.use('/reviews', reviewRoutes);
+router.use('/stats', statsRoutes);
 
 export default router;

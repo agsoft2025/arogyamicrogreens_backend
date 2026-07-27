@@ -34,6 +34,8 @@ export interface IProduct extends Document {
   isBestSeller: boolean;
   status: ProductStatus;
   tags: string[];
+  rating: number;
+  reviewCount: number;
   seo?: IProductSeo;
 }
 
@@ -125,6 +127,17 @@ const ProductSchema = new Schema(
     tags: {
       type: [String],
       default: [],
+    },
+    rating: {
+      type: Number,
+      min: 0,
+      max: 5,
+      default: 0,
+    },
+    reviewCount: {
+      type: Number,
+      min: 0,
+      default: 0,
     },
     seo: {
       metaTitle: {

@@ -57,7 +57,10 @@ export class AuthService {
     });
 
     console.log(`OTP for ${mobileNumber}: ${otp}`);
-    return { success: true, otp };
+
+    // If the user already exists, return their name so the UI can pre-fill it
+    const existingUser = await this.authRepo.findUserByMobile(mobileNumber);
+    return { success: true, otp, existingName: existingUser?.name ?? null };
   }
 
   async verifyOtp(mobileNumber: string, otp: string, name?: string) {

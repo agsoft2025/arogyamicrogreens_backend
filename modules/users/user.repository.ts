@@ -1,5 +1,6 @@
-import { QueryFilter } from 'mongoose';
+import mongoose, { QueryFilter } from 'mongoose';
 import User, { IUser } from './user.model';
+import { SaveAddressDto } from './user.types';
 
 export class UserRepository {
   async create(data: Partial<IUser>) {
@@ -21,10 +22,7 @@ export class UserRepository {
       User.countDocuments(filter),
     ]);
 
-    return {
-      items,
-      total,
-    };
+    return { items, total };
   }
 
   async findById(id: string) {
@@ -39,21 +37,62 @@ export class UserRepository {
     return User.findOne({ email });
   }
 
-  async updateById(
-    id: string,
-    data: Partial<IUser>
-  ) {
-    return User.findByIdAndUpdate(
-      id,
-      data,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+  async updateById(id: string, data: Partial<IUser>) {
+    return User.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+    });
   }
 
   async deleteById(id: string) {
     return User.findByIdAndDelete(id);
+  }
+
+  /** Push a new address to savedAddresses. If isDefault, unset others first. */
+  async addSavedAddress(userId: string, address: SaveAddressDto) {
+    // Initialise the field for legacy users created before savedAddresses was added to the schema
+    await User.updateOne(
+      { _id: userId, savedAddresses: { $exists: false } },
+      { $set: { savedAddresses: [] } }
+    );
+
+    if (address.isDefault) {
+      // arrayFilters is safe even when the array is empty — $[] is not
+      await User.updateOne(
+        { _id: userId },
+        { $set: { 'savedAddresses.$[elem].isDefault': false } },
+        { arrayFilters: [{ 'elem.isDefault': true }] }
+      );
+    }
+
+    return User.findByIdAndUpdate(
+      userId,
+      { $push: { savedAddresses: address } },
+      { new: true, runValidators: true }
+    );
+  }
+
+  /** Remove an address by its subdocument _id */
+  async removeSavedAddress(userId: string, addressId: string) {
+    return User.findByIdAndUpdate(
+      userId,
+      { $pull: { savedAddresses: { _id: new mongoose.Types.ObjectId(addressId) } } },
+      { new: true }
+    );
+  }
+
+  /** Set one address as default and clear others */
+  async setDefaultAddress(userId: string, addressId: string) {
+    // arrayFilters is safe on empty arrays; $[] is not
+    await User.updateOne(
+      { _id: userId },
+      { $set: { 'savedAddresses.$[elem].isDefault': false } },
+      { arrayFilters: [{ 'elem.isDefault': true }] }
+    );
+    return User.findOneAndUpdate(
+      { _id: userId, 'savedAddresses._id': new mongoose.Types.ObjectId(addressId) },
+      { $set: { 'savedAddresses.$.isDefault': true } },
+      { new: true }
+    );
   }
 }

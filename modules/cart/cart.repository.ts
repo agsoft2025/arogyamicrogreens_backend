@@ -23,7 +23,11 @@ export class CartRepository {
   }
 
   async create(data: Partial<ICart>) {
-    return Cart.create(data);
+    const cart = await Cart.create(data);
+    return Cart.findById(cart._id).populate(
+      'items.productId',
+      'name slug price salePrice stock images featuredImage'
+    );
   }
 
   async updateById(
@@ -34,7 +38,7 @@ export class CartRepository {
       id,
       data,
       {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       }
     ).populate(
@@ -63,7 +67,7 @@ export class CartRepository {
         },
       },
       {
-        new: true,
+        returnDocument: 'after',
       }
     ).populate(
       'items.productId',
@@ -83,7 +87,7 @@ export class CartRepository {
         },
       },
       {
-        new: true,
+        returnDocument: 'after',
       }
     ).populate(
       'items.productId',

@@ -40,6 +40,13 @@ export class CartService {
     userId: string,
     data: AddToCartDto
   ) {
+    if (!data.productId || !mongoose.Types.ObjectId.isValid(data.productId)) {
+      throw new CartError('Invalid product ID', 400);
+    }
+    if (!data.quantity || data.quantity < 1) {
+      throw new CartError('Quantity must be at least 1', 400);
+    }
+
     const product =
       await Product.findById(data.productId);
 
@@ -94,11 +101,14 @@ export class CartService {
       });
     } else {
       const existingItemIndex =
-        cart.items.findIndex(
-          (item) =>
-            item.productId.toString() ===
-            data.productId
-        );
+        cart.items.findIndex((item) => {
+          if (!item.productId) return false;
+          const pid = item.productId as any;
+          const idStr = pid._id
+            ? pid._id.toString()
+            : pid.toString();
+          return idStr === data.productId;
+        });
 
       if (existingItemIndex > -1) {
         const newQuantity =
@@ -126,14 +136,14 @@ export class CartService {
         });
       }
 
-      cart.totalAmount = this.calculateTotal(
-        cart.items
-      );
+      // Strip any items with null productId (orphaned refs from deleted products)
+      const validItems = cart.items.filter((item) => item.productId != null);
+      cart.totalAmount = this.calculateTotal(validItems);
 
       cart = await this.cartRepo.updateById(
         cart._id.toString(),
         {
-          items: cart.items,
+          items: validItems,
           totalAmount: cart.totalAmount,
         }
       );
@@ -147,6 +157,8 @@ export class CartService {
     productId: string,
     data: UpdateCartItemDto
   ) {
+    console.log('updateCartItem called:', { userId, productId, quantity: data.quantity });
+
     const cart =
       await this.cartRepo.findByUserId(
         userId,
@@ -156,12 +168,14 @@ export class CartService {
     if (!cart) {
       throw new CartError('Cart not found', 404);
     }
-
-    const itemIndex = cart.items.findIndex(
-      (item) =>
-        item.productId.toString() ===
-        productId
-    );
+    const itemIndex = cart.items.findIndex((item) => {
+      if (!item.productId) return false;
+      const pid = item.productId as any;
+      const idStr = pid._id
+        ? pid._id.toString()
+        : pid.toString();
+      return idStr === productId;
+    });
 
     if (itemIndex === -1) {
       throw new CartError(
@@ -169,6 +183,9 @@ export class CartService {
         404
       );
     }
+
+    console.log('Current item quantity:', cart.items[itemIndex].quantity);
+    console.log('New quantity:', data.quantity);
 
     const product =
       await Product.findById(productId);
@@ -187,18 +204,22 @@ export class CartService {
         data.quantity;
     }
 
-    cart.totalAmount = this.calculateTotal(
-      cart.items
-    );
+    // Strip orphaned items (product deleted from DB → populate returns null)
+    const validItems = cart.items.filter((item) => item.productId != null);
+    cart.totalAmount = this.calculateTotal(validItems);
 
     const updatedCart =
       await this.cartRepo.updateById(
         cart._id.toString(),
         {
-          items: cart.items,
+          items: validItems,
           totalAmount: cart.totalAmount,
         }
       );
+
+    if (!updatedCart) {
+      throw new CartError('Failed to update cart', 500);
+    }
 
     return updatedCart;
   }
@@ -207,6 +228,7 @@ export class CartService {
     userId: string,
     productId: string
   ) {
+    console.log("Removing from cart", userId, productId);
     const cart =
       await this.cartRepo.findByUserId(
         userId,
@@ -217,11 +239,14 @@ export class CartService {
       throw new CartError('Cart not found', 404);
     }
 
-    const itemIndex = cart.items.findIndex(
-      (item) =>
-        item.productId.toString() ===
-        productId
-    );
+    const itemIndex = cart.items.findIndex((item) => {
+      if (!item.productId) return false;
+      const pid = item.productId as any;
+      const idStr = pid._id
+        ? pid._id.toString()
+        : pid.toString();
+      return idStr === productId;
+    });
 
     if (itemIndex === -1) {
       throw new CartError(
@@ -231,18 +256,23 @@ export class CartService {
     }
 
     cart.items.splice(itemIndex, 1);
-    cart.totalAmount = this.calculateTotal(
-      cart.items
-    );
+
+    // Strip any other orphaned items before saving
+    const validItems = cart.items.filter((item) => item.productId != null);
+    cart.totalAmount = this.calculateTotal(validItems);
 
     const updatedCart =
       await this.cartRepo.updateById(
         cart._id.toString(),
         {
-          items: cart.items,
+          items: validItems,
           totalAmount: cart.totalAmount,
         }
       );
+
+    if (!updatedCart) {
+      throw new CartError('Failed to update cart', 500);
+    }
 
     return updatedCart;
   }
@@ -270,6 +300,10 @@ export class CartService {
         }
       );
 
+    if (!updatedCart) {
+      throw new CartError('Failed to clear cart', 500);
+    }
+
     return updatedCart;
   }
 
@@ -280,3 +314,4 @@ export class CartService {
     }, 0);
   }
 }
+

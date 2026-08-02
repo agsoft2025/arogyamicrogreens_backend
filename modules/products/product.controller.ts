@@ -33,6 +33,7 @@ export class ProductController {
       await productService.getProducts(
         req.query
       );
+console.log("data",data);
 
     return res.json({
       success: true,

@@ -132,12 +132,10 @@ export const requireAuth = async (
     const user = await User.findById(
       decoded.userId
     );
-
     if (!user) {
       return res.status(401).json({
         success: false,
-        message:
-          'Authentication required',
+        message:'Authentication required',
       });
     }
 

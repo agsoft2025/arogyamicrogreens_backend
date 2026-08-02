@@ -6,6 +6,7 @@ import express, {
 } from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import morgan from 'morgan';
 
 import routes from './routes'
 
@@ -21,6 +22,8 @@ function formatUptime(totalSeconds: number): string {
 
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 }
+
+app.use(morgan('dev'));
 
 app.use(
   cors({

@@ -11,15 +11,14 @@ export const imageUpload = multer({
   limits: {
     fileSize: TWO_MB,
   },
+ 
   fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(
-        new UploadError(
-          'Only image files are allowed'
-        )
-      );
-    }
+  if (!file.mimetype.startsWith('image/')) {
+    return cb(
+      new UploadError('Only image files are allowed')
+    );
+  }
 
-    return cb(null, true);
-  },
+  cb(null, true);
+},
 });

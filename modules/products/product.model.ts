@@ -13,11 +13,13 @@ export interface IProductSeo {
   metaDescription?: string;
 }
 
+export type ProductCategory = 'product' | 'microgreen';
+
 export interface IProduct extends Document {
   name: string;
   slug: string;
   sku: string;
-  categoryId: mongoose.Types.ObjectId;
+  category: ProductCategory;
   price: number;
   salePrice?: number;
   stock: number;
@@ -29,8 +31,11 @@ export interface IProduct extends Document {
   weight?: number;
   weightUnit?: string;
   isFeatured: boolean;
+  isBestSeller: boolean;
   status: ProductStatus;
   tags: string[];
+  rating: number;
+  reviewCount: number;
   seo?: IProductSeo;
 }
 
@@ -55,8 +60,9 @@ const ProductSchema = new Schema(
       trim: true,
       uppercase: true,
     },
-    categoryId: {
-      type: Schema.Types.ObjectId,
+    category: {
+      type: String,
+      enum: ["product", "microgreen"],
       required: true,
       index: true,
     },
@@ -107,6 +113,11 @@ const ProductSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    isBestSeller: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     status: {
       type: String,
       enum: ['active', 'inactive', 'draft'],
@@ -116,6 +127,17 @@ const ProductSchema = new Schema(
     tags: {
       type: [String],
       default: [],
+    },
+    rating: {
+      type: Number,
+      min: 0,
+      max: 5,
+      default: 0,
+    },
+    reviewCount: {
+      type: Number,
+      min: 0,
+      default: 0,
     },
     seo: {
       metaTitle: {

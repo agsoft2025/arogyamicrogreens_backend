@@ -13,6 +13,30 @@ const router = Router();
 const controller =
   new UploadController();
 
+// const uploadImages = (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//    req.body.folder =
+//     req.body.folder || 'images';
+//   imageUpload.array('images', 10)(
+//     req,
+//     res,
+//     (error) => {
+//       if (error instanceof multer.MulterError) {
+//         error.message =
+//           error.code === 'LIMIT_FILE_SIZE'
+//             ? 'Image size must be below 2 MB'
+//             : error.message;
+//         return next(error);
+//       }
+
+//       return next(error);
+//     }
+//   );
+// };
+
 const uploadImages = (
   req: Request,
   res: Response,
@@ -22,11 +46,15 @@ const uploadImages = (
     req,
     res,
     (error) => {
-      if (error instanceof multer.MulterError) {
+      if (
+        error instanceof multer.MulterError
+      ) {
         error.message =
-          error.code === 'LIMIT_FILE_SIZE'
+          error.code ===
+          'LIMIT_FILE_SIZE'
             ? 'Image size must be below 2 MB'
             : error.message;
+
         return next(error);
       }
 
@@ -34,6 +62,7 @@ const uploadImages = (
     }
   );
 };
+
 
 router.post(
   '/images',

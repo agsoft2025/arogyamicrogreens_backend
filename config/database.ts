@@ -6,7 +6,7 @@ export const connectDB = async () => {
       process.env.MONGO_URI as string
     );
 
-    console.log('MongoDB Connected');
+    console.log('MongoDB Connected',process.env.MONGO_URI );
   } catch (error) {
     console.error(error);
     process.exit(1);

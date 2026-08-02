@@ -50,6 +50,7 @@ function getCookieValue(req: Request, name: string): string | undefined {
 export class AuthController {
   async sendOtp(req: Request, res: Response) {
     const { mobileNumber } = req.body;
+    console.log("<><>mobileNumber",mobileNumber)
     const response = await authService.sendOtp(mobileNumber);
     return res.json({
       success: true,

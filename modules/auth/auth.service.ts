@@ -1,5 +1,6 @@
 import { AuthRepository } from './auth.repository';
 import { generateOtp } from '../../common/utils/otp';
+import { sendWhatsappOtp } from './whatsappOtp.service';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -56,11 +57,11 @@ export class AuthService {
       expiresAt: now + OTP_WINDOW_MS,
     });
 
-    console.log(`OTP for ${mobileNumber}: ${otp}`);
+    await sendWhatsappOtp(mobileNumber, otp);
 
     // If the user already exists, return their name so the UI can pre-fill it
     const existingUser = await this.authRepo.findUserByMobile(mobileNumber);
-    return { success: true, otp, existingName: existingUser?.name ?? null };
+    return { success: true, existingName: existingUser?.name ?? null };
   }
 
   async verifyOtp(mobileNumber: string, otp: string, name?: string) {
